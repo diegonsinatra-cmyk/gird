@@ -1,6 +1,6 @@
 streamlit
-geopandas
 pandas
 folium
-streamlit-foliums
+streamlit-folium
+geopandas
 mapclassify
