@@ -1113,6 +1113,8 @@ if st.button("▶  CALCULAR AMENAZA"):
             st.session_state["gdf_analizado"] = gdf
             st.session_state["a_calculada"] = True
 
+# ... (todo el código anterior del botón y cálculos)
+
     if "A_Score" in gdf.columns:
         c1, c2 = st.columns([3, 1])
         with c1:
@@ -1125,8 +1127,8 @@ if st.button("▶  CALCULAR AMENAZA"):
             metricas_resumen(gdf, "A_Score", "Amenaza")
             tarjetas_nivel(gdf, "A_Score")
 
+    # ESTA LÍNEA ES LA DEL ERROR: Debe tener espacios a la izquierda
     return gdf
-
 
 # ─── 9. PESTAÑA RIESGO ───────────────────────────────────────────────────────
 def tab_riesgo(gdf: gpd.GeoDataFrame):
