@@ -5,3 +5,4 @@ streamlit-folium
 geopandas
 pyogrio
 rasterio
+numpy
