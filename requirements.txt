@@ -1,9 +1,0 @@
-streamlit
-pandas
-folium
-streamlit-folium
-geopandas
-mapclassify
-pyogrio
-rasterio
-rasterstats

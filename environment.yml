@@ -1,0 +1,14 @@
+name: st-mapas
+channels:
+  - conda-forge
+dependencies:
+  - python=3.10
+  - streamlit
+  - pandas
+  - geopandas
+  - folium
+  - streamlit-folium
+  - mapclassify
+  - pyogrio
+  - rasterio
+  - rasterstats
