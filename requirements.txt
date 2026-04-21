@@ -4,3 +4,4 @@ folium
 streamlit-folium
 geopandas
 mapclassify
+pyogrio
