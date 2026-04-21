@@ -6,14 +6,27 @@ import folium
 from folium import GeoJsonTooltip
 import streamlit as st
 from streamlit_folium import st_folium
+import traceback
 
-# ─── Intentar importar dependencias opcionales ────────────────────────────────
+# ─── DIAGNÓSTICO DE DEPENDENCIAS ──────────────────────────────────────────────
+# Usamos un bloque más robusto para capturar el error exacto de la nube
+error_log = ""
 try:
     import rasterio
-    from rasterstats import zonal_stats
+    # Intentamos importar rasterstats pero lo hacemos opcional por separado
+    try:
+        from rasterstats import zonal_stats
+        HAS_STATS = True
+    except ImportError:
+        HAS_STATS = False
+        error_log += "-> rasterstats no instalado. "
+    
     RASTER_OK = True
-except ImportError:
+except Exception as e:
     RASTER_OK = False
+    HAS_STATS = False
+    # Capturamos el error detallado (puede ser falta de libgdal, versión de numpy, etc.)
+    error_log = traceback.format_exc()
 
 # ─── 0. CONFIGURACIÓN GLOBAL ─────────────────────────────────────────────────
 st.set_page_config(
@@ -22,6 +35,14 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded",
 )
+
+# Inyectamos el aviso de error si algo falla
+if not RASTER_OK:
+    with st.expander("⚠️ ERROR DE SISTEMA: Análisis Topográfico Desactivado", expanded=True):
+        st.error("No se pudieron cargar las librerías geoespaciales pesadas.")
+        st.markdown("**Detalle técnico para depuración:**")
+        st.code(error_log, language="bash")
+        st.info("Sugerencia: Revisá si 'libgdal-dev' está en packages.txt y 'rasterio' en requirements.txt")
 
 _BASE = os.path.dirname(os.path.abspath(__file__))
 
@@ -51,7 +72,6 @@ COLORES_NIVEL = {
     "Alto":     "#f87171",
     "Muy Alto": "#dc2626",
 }
-
 # ─── 1. CSS / TEMA ────────────────────────────────────────────────────────────
 def aplicar_tema():
     st.markdown("""
