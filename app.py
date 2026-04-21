@@ -1,3 +1,16 @@
+import streamlit as st
+
+# DIAGNÓSTICO TEMPORAL - borrar después
+st.write("RASTER_OK:", RASTER_OK)
+st.write("Raster path:", RUTAS.get("raster", "no definido"))
+import os
+st.write("Archivo existe:", os.path.exists(os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "mde_convertido.tif")))
+st.write("Archivos en data/:", os.listdir(os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")))
+try:
+    import rasterio
+    st.write("rasterio versión:", rasterio.__version__)
+except Exception as e:
+    st.write("Error importando rasterio:", str(e))
 import os
 import numpy as np
 import pandas as pd
