@@ -10,11 +10,11 @@ from streamlit_folium import st_folium
 # ─── Intentar importar dependencias opcionales ────────────────────────────────
 try:
     import rasterio
-    from rasterstats import zonal_stats
+    from rasterio.mask import mask
     RASTER_OK = True
-except ImportError:
+except Exception as e:
     RASTER_OK = False
-
+    st.error(f"Error al cargar Rasterio: {e}")
 # ─── 0. CONFIGURACIÓN GLOBAL ─────────────────────────────────────────────────
 st.set_page_config(
     page_title="GIRD · Riesgo Territorial",
