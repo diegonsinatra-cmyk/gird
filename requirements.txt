@@ -4,5 +4,5 @@ folium
 streamlit-folium
 geopandas
 pyogrio
-rasterio
+rasterio==1.3.10
 numpy<2.0.0
