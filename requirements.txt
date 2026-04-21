@@ -2,7 +2,6 @@ streamlit
 pandas
 folium
 streamlit-folium
-geopandas==0.14.4
-mapclassify
+geopandas
 pyogrio
-rasterio==1.3.10
+rasterio
