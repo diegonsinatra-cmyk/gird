@@ -1114,28 +1114,14 @@ if st.button("▶  CALCULAR AMENAZA"):
             st.session_state["a_calculada"] = True
             
 def tab_amenaza(gdf):
-    # ... (todo tu código previo: botones, cálculos, etc.) ...
+    # ... todo tu código de la pestaña amenaza ...
+    # ... (asegurate que todo esto tenga espacios a la izquierda) ...
     
     if "A_Score" in gdf.columns:
-        c1, c2 = st.columns([3, 1])
-        with c1:
-            mapa_coropletico(
-                gdf, "A_Score", PALETAS["amenaza"],
-                tooltip_extra=["A_Nivel", "A_Mes", "A_pTWI", "A_pPrec", "A_pFreq"],
-                key="map_a",
-            )
-        with c2:
-            metricas_resumen(gdf, "A_Score", "Amenaza")
-            tarjetas_nivel(gdf, "A_Score")
+        # código del mapa...
+        pass # (esto es un ejemplo, vos tenés tu código ahí)
 
-    # LA SOLUCIÓN: Esta línea debe estar alineada con el 'if' de arriba
-    # (Generalmente son 4 espacios desde el borde izquierdo)
-    return gdf
-
-# REVISIÓN FINAL: Después de ese return, el código que sigue (main) 
-# debe estar pegado al borde izquierdo.
-def tab_riesgo(gdf):
-    # ...
+    return gdf  # <--- ESTE RETURN DEBE ESTAR IDENTADO (4 espacios)
 
 # ─── 9. PESTAÑA RIESGO ───────────────────────────────────────────────────────
 def tab_riesgo(gdf: gpd.GeoDataFrame):
