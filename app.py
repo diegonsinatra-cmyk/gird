@@ -7,14 +7,38 @@ from folium import GeoJsonTooltip
 import streamlit as st
 from streamlit_folium import st_folium
 
-# ─── Intentar importar dependencias opcionales ────────────────────────────────
+# ─── REEMPLAZO DE DEPENDENCIAS (Solución para la nube) ───────────────────────
 try:
     import rasterio
     from rasterio.mask import mask
     RASTER_OK = True
-except Exception as e:
+except ImportError:
     RASTER_OK = False
-    st.error(f"Error al cargar Rasterio: {e}")
+
+# Función manual para reemplazar zonal_stats y evitar el NameError
+def zonal_stats_manual(gdf_input, raster_path):
+    """Calcula la media del raster para cada polígono usando rasterio"""
+    resultados = []
+    try:
+        with rasterio.open(raster_path) as src:
+            for geom in gdf_input.geometry:
+                try:
+                    # Máscara del raster con la geometría del radio censal
+                    out_image, _ = mask(src, [geom], crop=True)
+                    data = out_image[0]
+                    # Filtrar valores NoData (típicos -9999)
+                    validos = data[data > -9000]
+                    if validos.size > 0:
+                        resultados.append(float(validos.mean()))
+                    else:
+                        resultados.append(0.0)
+                except Exception:
+                    resultados.append(0.0)
+    except Exception as e:
+        st.error(f"Error al abrir el raster: {e}")
+        return [0.0] * len(gdf_input)
+    return resultados
+
 # ─── 0. CONFIGURACIÓN GLOBAL ─────────────────────────────────────────────────
 st.set_page_config(
     page_title="GIRD · Riesgo Territorial",
