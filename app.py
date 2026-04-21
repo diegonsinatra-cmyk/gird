@@ -1045,25 +1045,45 @@ def tab_amenaza(gdf: gpd.GeoDataFrame):
             "La amenaza se calculará solo con las dos variables climáticas del SMN."
         )
 
-    # ── Botón de cálculo ──────────────────────────────────────────────────
+   # ── Botón de cálculo ──────────────────────────────────────────────────
     if st.button("▶  CALCULAR AMENAZA"):
         with st.spinner("Procesando amenaza territorial…"):
 
-            # ── Variable 1: TWI (diferencia radios dentro del distrito) ───
-            if usar_raster:
-                stats = zonal_stats(gdf, RUTAS["raster"], stats="mean")
-                gdf["twi_raw"] = [s["mean"] if s["mean"] is not None else 0 for s in stats]
-                # invertir=True: zonas más bajas (TWI alto) → mayor amenaza
+            # ── Variable 1: TWI (Análisis con Rasterio Puro) ───
+            if usar_raster and RASTER_OK:
+                import rasterio
+                from rasterio.mask import mask
+                
+                def get_raster_mean(gdf_input, raster_path):
+                    means = []
+                    with rasterio.open(raster_path) as src:
+                        for geom in gdf_input.geometry:
+                            try:
+                                # Extraemos los datos del raster que caen dentro del polígono
+                                out_image, _ = mask(src, [geom], crop=True)
+                                data = out_image[0]
+                                # Filtramos valores NoData (suelen ser -9999 o similar)
+                                valid_data = data[data > -9000] 
+                                if valid_data.size > 0:
+                                    means.append(float(valid_data.mean()))
+                                else:
+                                    means.append(0.0)
+                            except Exception:
+                                means.append(0.0)
+                    return means
+
+                # Calculamos la media de altura/TWI por radio censal
+                gdf["twi_raw"] = get_raster_mean(gdf, RUTAS["raster"])
+                
+                # Invertir=True: zonas con valores bajos (ej. hondonadas) → mayor amenaza
                 gdf["p_twi"] = normalizar_rangos(gdf["twi_raw"], invertir=True)
             else:
-                # Sin raster: TWI neutro (todos los radios reciben el mismo valor medio)
+                # Si el raster falla o no se usa, valor neutro
                 gdf["twi_raw"] = 0.0
                 gdf["p_twi"]   = 3
 
             # ── Variables 2 y 3: clima SMN (valor único para el distrito) ─
-            # El score del mes ya fue normalizado en el rango anual de la estación (1–5)
-            # Se asigna el mismo valor a todos los radios del distrito
-            p_prec_mes = datos_mes["p_prec"]   # score precipitación del mes (1–5)
+            p_prec_mes = datos_mes["p_prec"]    # score precipitación del mes (1–5)
             p_freq_mes = datos_mes["p_freq"]    # score frecuencia del mes (1–5)
 
             # ── Suma de los 3 scores ──────────────────────────────────────
@@ -1071,7 +1091,6 @@ def tab_amenaza(gdf: gpd.GeoDataFrame):
             gdf["A_Suma"] = gdf["p_twi"] + p_prec_mes + p_freq_mes
 
             # ── Re-normalización final en 5 rangos ────────────────────────
-            # Aplica la misma lógica min/max que vulnerabilidad
             gdf["A_Score"]    = score_a_indice(gdf["A_Suma"], suma_min=3, suma_max=15)
             gdf["A_Nivel"]    = gdf["A_Score"].map(pct_a_label)
             gdf["A_Mes"]      = mes_sel
@@ -1084,20 +1103,7 @@ def tab_amenaza(gdf: gpd.GeoDataFrame):
 
             st.session_state["gdf_analizado"] = gdf
             st.session_state["a_calculada"] = True
-
-    if "A_Score" in gdf.columns:
-        c1, c2 = st.columns([3, 1])
-        with c1:
-            mapa_coropletico(
-                gdf, "A_Score", PALETAS["amenaza"],
-                tooltip_extra=["A_Nivel", "A_Mes", "A_pTWI", "A_pPrec", "A_pFreq"],
-                key="map_a",
-            )
-        with c2:
-            metricas_resumen(gdf, "A_Score", "Amenaza")
-            tarjetas_nivel(gdf, "A_Score")
-
-    return gdf
+            st.rerun() # Forzamos recarga para que el mapa aparezca al instante
 
 
 # ─── 9. PESTAÑA RIESGO ───────────────────────────────────────────────────────
