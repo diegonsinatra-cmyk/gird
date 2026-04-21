@@ -1,6 +1,2 @@
 libgdal-dev
-gdal-bin
 g++
-libproj-dev
-python3-dev
-binutils
