@@ -1025,20 +1025,44 @@ def tab_amenaza(gdf: gpd.GeoDataFrame):
             "La amenaza se calculará solo con las dos variables climáticas del SMN."
         )
 
-    # ── Botón de cálculo ──────────────────────────────────────────────────
-    if st.button("▶  CALCULAR AMENAZA"):
-        with st.spinner("Procesando amenaza territorial…"):
+# --- BUSCÁ EL BLOQUE DEL BOTÓN DE CÁLCULO ---
+if st.button("▶  CALCULAR AMENAZA"):
+    with st.spinner("Procesando amenaza territorial…"):
 
-            # ── Variable 1: TWI (diferencia radios dentro del distrito) ───
-            if usar_raster:
-                stats = zonal_stats(gdf, RUTAS["raster"], stats="mean")
-                gdf["twi_raw"] = [s["mean"] if s["mean"] is not None else 0 for s in stats]
-                # invertir=True: zonas más bajas (TWI alto) → mayor amenaza
-                gdf["p_twi"] = normalizar_rangos(gdf["twi_raw"], invertir=True)
-            else:
-                # Sin raster: TWI neutro (todos los radios reciben el mismo valor medio)
-                gdf["twi_raw"] = 0.0
-                gdf["p_twi"]   = 3
+        # ── Variable 1: TWI (Análisis con Rasterio Puro) ───
+        if usar_raster and RASTER_OK:
+            import rasterio
+            from rasterio.mask import mask
+            
+            # Función interna para reemplazar zonal_stats
+            def calcular_media_manual(gdf_input, raster_path):
+                resultados = []
+                with rasterio.open(raster_path) as src:
+                    for geom in gdf_input.geometry:
+                        try:
+                            # Cortamos el raster con la forma del radio censal
+                            out_image, _ = mask(src, [geom], crop=True)
+                            data = out_image[0]
+                            # Filtramos valores NoData (típicos de MDE)
+                            validos = data[data > -9000] 
+                            if validos.size > 0:
+                                resultados.append(float(validos.mean()))
+                            else:
+                                resultados.append(0.0)
+                        except:
+                            resultados.append(0.0)
+                return resultados
+
+            # REEMPLAZO DE LA LÍNEA DEL ERROR:
+            # En lugar de stats = zonal_stats(...), usamos nuestra función:
+            gdf["twi_raw"] = calcular_media_manual(gdf, RUTAS["raster"])
+            
+            # Invertir=True: zonas más bajas (valores de elevación menores) → mayor amenaza
+            gdf["p_twi"] = normalizar_rangos(gdf["twi_raw"], invertir=True)
+        else:
+            # Sin raster o si falló la carga inicial
+            gdf["twi_raw"] = 0.0
+            gdf["p_twi"] = 3
 
             # ── Variables 2 y 3: clima SMN (valor único para el distrito) ─
             # El score del mes ya fue normalizado en el rango anual de la estación (1–5)
