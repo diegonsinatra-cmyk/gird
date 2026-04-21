@@ -1024,67 +1024,51 @@ def tab_amenaza(gdf: gpd.GeoDataFrame):
             "Archivo MDE no encontrado o rasterio/rasterstats no instalados. "
             "La amenaza se calculará solo con las dos variables climáticas del SMN."
         )
-
-    # ── Botón de cálculo ──────────────────────────────────────────────────
+# ── Botón de cálculo ──────────────────────────────────────────────────
     if st.button("▶  CALCULAR AMENAZA"):
         with st.spinner("Procesando amenaza territorial…"):
-
-            # ── Variable 1: TWI (diferencia radios dentro del distrito) ───
-        if usar_raster and RASTER_OK:
-                # Usamos rasterio directamente porque zonal_stats falla en la nube
+            # TODO ESTO DEBE TENER MÁS ESPACIOS A LA DERECHA (DENTRO DEL SPINNER)
+            
+            # ── Variable 1: TWI (Análisis con Rasterio) ───
+            if usar_raster and RASTER_OK:
                 import rasterio
                 from rasterio.mask import mask
                 
-                alturas_medias = []
-                try:
-                    with rasterio.open(RUTAS["raster"]) as src:
-                        for geom in gdf.geometry:
+                def get_raster_mean(gdf_input, raster_path):
+                    means = []
+                    with rasterio.open(raster_path) as src:
+                        for geom in gdf_input.geometry:
                             try:
-                                # Cortamos el mapa con la forma de cada radio censal
                                 out_image, _ = mask(src, [geom], crop=True)
                                 data = out_image[0]
-                                # Filtramos valores inválidos
-                                validos = data[data > -9000]
-                                alturas_medias.append(float(validos.mean()) if validos.size > 0 else 0.0)
+                                valid_data = data[data > -9000] 
+                                means.append(float(valid_data.mean()) if valid_data.size > 0 else 0.0)
                             except:
-                                alturas_medias.append(0.0)
-                    
-                    gdf["twi_raw"] = alturas_medias
-                    # Invertir=True para que las zonas bajas tengan más peso de amenaza
-                    gdf["p_twi"] = normalizar_rangos(gdf["twi_raw"], abordar_extremos=True, invertir=True)
-                
-                except Exception as e:
-                    st.warning(f"Error al leer el archivo raster: {e}")
-                    gdf["p_twi"] = 3 # Valor neutro si falla
+                                means.append(0.0)
+                    return means
+
+                gdf["twi_raw"] = get_raster_mean(gdf, RUTAS["raster"])
+                gdf["p_twi"] = normalizar_rangos(gdf["twi_raw"], invertir=True)
             else:
-                # Si no hay raster, usamos un valor neutro para no frenar el cálculo
                 gdf["twi_raw"] = 0.0
                 gdf["p_twi"] = 3
 
-            # ── Variables 2 y 3: clima SMN (valor único para el distrito) ─
-            # El score del mes ya fue normalizado en el rango anual de la estación (1–5)
-            # Se asigna el mismo valor a todos los radios del distrito
-            p_prec_mes = datos_mes["p_prec"]   # score precipitación del mes (1–5)
-            p_freq_mes = datos_mes["p_freq"]    # score frecuencia del mes (1–5)
+            # ── Variables 2 y 3: clima SMN ───
+            p_prec_mes = datos_mes["p_prec"]
+            p_freq_mes = datos_mes["p_freq"]
 
-            # ── Suma de los 3 scores ──────────────────────────────────────
-            # Rango posible: 3 (mínimo) a 15 (máximo)
+            # ── Suma y Score Final ───
             gdf["A_Suma"] = gdf["p_twi"] + p_prec_mes + p_freq_mes
-
-            # ── Re-normalización final en 5 rangos ────────────────────────
-            # Aplica la misma lógica min/max que vulnerabilidad
-            gdf["A_Score"]    = score_a_indice(gdf["A_Suma"], suma_min=3, suma_max=15)
-            gdf["A_Nivel"]    = gdf["A_Score"].map(pct_a_label)
-            gdf["A_Mes"]      = mes_sel
-            gdf["A_Estacion"] = estacion_sel
-            gdf["A_PrecMes"]  = datos_mes["prec_mm"]
-            gdf["A_FreqMes"]  = datos_mes["freq_dias"]
-            gdf["A_pTWI"]     = gdf["p_twi"]
-            gdf["A_pPrec"]    = p_prec_mes
-            gdf["A_pFreq"]    = p_freq_mes
-
+            gdf["A_Score"] = score_a_indice(gdf["A_Suma"], suma_min=3, suma_max=15)
+            
+            # Mapeo de etiquetas y guardado de resultados
+            gdf["A_Nivel"] = gdf["A_Score"].map(pct_a_label)
+            gdf["A_Mes"] = mes_sel
+            
+            # Guardamos en el estado de sesión para que Riesgo lo vea
             st.session_state["gdf_analizado"] = gdf
             st.session_state["a_calculada"] = True
+            st.rerun()
 
     if "A_Score" in gdf.columns:
         c1, c2 = st.columns([3, 1])
