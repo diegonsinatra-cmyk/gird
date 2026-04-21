@@ -16,25 +16,6 @@ except Exception as e:
     RASTER_OK = False
     _RASTER_ERROR = str(e)
 
-# DIAGNÓSTICO TEMPORAL - borrar después
-st.write("RASTER_OK:", RASTER_OK)
-if not RASTER_OK:
-    st.write("Error:", _RASTER_ERROR)
-_BASE_DIAG = os.path.dirname(os.path.abspath(__file__))
-st.write("Archivos en data/:", os.listdir(os.path.join(_BASE_DIAG, "data")))
-st.write("Raster existe:", os.path.exists(os.path.join(_BASE_DIAG, "data", "mde_convertido.tif")))
-try:
-    import rasterio as _r
-    st.write("rasterio ok, versión:", _r.__version__)
-except Exception as e:
-    st.write("Error rasterio:", str(e))
-try:
-    from rasterstats import zonal_stats
-    st.write("rasterstats ok")
-except Exception as e:
-    st.write("Error rasterstats:", str(e))
-st.stop()
-
 # ─── 0. CONFIGURACIÓN GLOBAL ─────────────────────────────────────────────────
 st.set_page_config(
     page_title="GIRD · Riesgo Territorial",
