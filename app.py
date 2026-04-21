@@ -1030,15 +1030,36 @@ def tab_amenaza(gdf: gpd.GeoDataFrame):
         with st.spinner("Procesando amenaza territorial…"):
 
             # ── Variable 1: TWI (diferencia radios dentro del distrito) ───
-            if usar_raster:
-                stats = zonal_stats(gdf, RUTAS["raster"], stats="mean")
-                gdf["twi_raw"] = [s["mean"] if s["mean"] is not None else 0 for s in stats]
-                # invertir=True: zonas más bajas (TWI alto) → mayor amenaza
-                gdf["p_twi"] = normalizar_rangos(gdf["twi_raw"], invertir=True)
+        if usar_raster and RASTER_OK:
+                # Usamos rasterio directamente porque zonal_stats falla en la nube
+                import rasterio
+                from rasterio.mask import mask
+                
+                alturas_medias = []
+                try:
+                    with rasterio.open(RUTAS["raster"]) as src:
+                        for geom in gdf.geometry:
+                            try:
+                                # Cortamos el mapa con la forma de cada radio censal
+                                out_image, _ = mask(src, [geom], crop=True)
+                                data = out_image[0]
+                                # Filtramos valores inválidos
+                                validos = data[data > -9000]
+                                alturas_medias.append(float(validos.mean()) if validos.size > 0 else 0.0)
+                            except:
+                                alturas_medias.append(0.0)
+                    
+                    gdf["twi_raw"] = alturas_medias
+                    # Invertir=True para que las zonas bajas tengan más peso de amenaza
+                    gdf["p_twi"] = normalizar_rangos(gdf["twi_raw"], abordar_extremos=True, invertir=True)
+                
+                except Exception as e:
+                    st.warning(f"Error al leer el archivo raster: {e}")
+                    gdf["p_twi"] = 3 # Valor neutro si falla
             else:
-                # Sin raster: TWI neutro (todos los radios reciben el mismo valor medio)
+                # Si no hay raster, usamos un valor neutro para no frenar el cálculo
                 gdf["twi_raw"] = 0.0
-                gdf["p_twi"]   = 3
+                gdf["p_twi"] = 3
 
             # ── Variables 2 y 3: clima SMN (valor único para el distrito) ─
             # El score del mes ya fue normalizado en el rango anual de la estación (1–5)
