@@ -1,8 +1,2 @@
-streamlit
-pandas
-folium
-streamlit-folium
-geopandas
-pyogrio
 rasterio
-numpy
+rasterstats
