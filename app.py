@@ -1,16 +1,3 @@
-import streamlit as st
-
-# DIAGNÓSTICO TEMPORAL - borrar después
-st.write("RASTER_OK:", RASTER_OK)
-st.write("Raster path:", RUTAS.get("raster", "no definido"))
-import os
-st.write("Archivo existe:", os.path.exists(os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "mde_convertido.tif")))
-st.write("Archivos en data/:", os.listdir(os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")))
-try:
-    import rasterio
-    st.write("rasterio versión:", rasterio.__version__)
-except Exception as e:
-    st.write("Error importando rasterio:", str(e))
 import os
 import numpy as np
 import pandas as pd
@@ -27,6 +14,18 @@ try:
     RASTER_OK = True
 except ImportError:
     RASTER_OK = False
+
+# DIAGNÓSTICO TEMPORAL - borrar después
+st.write("RASTER_OK:", RASTER_OK)
+_BASE_DIAG = os.path.dirname(os.path.abspath(__file__))
+st.write("Archivos en data/:", os.listdir(os.path.join(_BASE_DIAG, "data")))
+st.write("Raster existe:", os.path.exists(os.path.join(_BASE_DIAG, "data", "mde_convertido.tif")))
+try:
+    import rasterio as _r
+    st.write("rasterio ok, versión:", _r.__version__)
+except Exception as e:
+    st.write("Error rasterio:", str(e))
+st.stop()  # ← detiene la app acá para ver el diagnóstico
 
 # ─── 0. CONFIGURACIÓN GLOBAL ─────────────────────────────────────────────────
 st.set_page_config(
