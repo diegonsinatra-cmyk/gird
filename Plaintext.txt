@@ -1,0 +1,4 @@
+libgdal-dev
+g++
+libproj-dev
+python3-dev
