@@ -28,7 +28,7 @@ _BASE = os.path.dirname(os.path.abspath(__file__))
 RUTAS = {
     "mapa":   os.path.join(_BASE, "data", "radioscensales.geojson"),
     "csv":    os.path.join(_BASE, "data", "indicadores.csv"),
-    "raster": os.path.join(_BASE, "data", "mde_convertido.tif"),
+    "raster": os.path.join(_main, "data", "mde_convertido.tif"),
     "smn":    os.path.join(_BASE, "data", "smn_normales.csv"),
 }
 
